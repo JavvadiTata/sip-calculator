@@ -27,7 +27,11 @@
                   type="number"
                   v-model="investment"
                   :class="$style['text-box']"
-                  @blur="showInvestmentText = true"
+                  @blur="
+                    {
+                      scaleInvestment(), (showInvestmentText = true);
+                    }
+                  "
                   v-else
                 />
               </div>
@@ -35,8 +39,8 @@
           </div>
         </div>
         <Slider
-          v-model="investment"
-          :max="1000000"
+          v-model="sliderValue"
+          :max="380"
           :step="1"
           :tooltips="false"
           :lazy="false"
@@ -264,6 +268,7 @@ import { InvestmentTypes } from '../constants';
 const emits = defineEmits(['update']);
 
 const investment = ref(25000);
+const sliderValue = ref(25000);
 const lumpInvestment = ref(100000);
 const investmentValue = ref(0);
 const estimatedReturnsValue = ref(0);
@@ -291,8 +296,33 @@ const showError = computed(() =>
 const investmentInterval = ref(1);
 
 onMounted(() => {
+  scaleInvestment();
   onValueChange();
 });
+
+const transformToDisplayValue = (value: number) => {
+  if (value <= 200) {
+    return value * 500;
+  } else {
+    return 100000 + (value - 200) * 5000;
+  }
+};
+
+const transformToSliderValue = (value: number) => {
+  if (value <= 100000) {
+    return value / 500;
+  } else {
+    return 200 + (value - 100000) / 5000;
+  }
+};
+
+watch(sliderValue, (newValue) => {
+  investment.value = transformToDisplayValue(newValue);
+});
+
+const scaleInvestment = () => {
+  sliderValue.value = transformToSliderValue(investment.value);
+};
 
 const investmentTitle = computed(() =>
   investmentType.value === InvestmentTypes.LUMPSUM ? 'Total Investment' : 'Monthly Investment'
@@ -300,6 +330,7 @@ const investmentTitle = computed(() =>
 
 const onInvestmentTypeChange = (type: InvestmentTypes) => {
   investmentType.value = type;
+  scaleInvestment();
   onValueChange();
 };
 

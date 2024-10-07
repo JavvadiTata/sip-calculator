@@ -9,6 +9,31 @@
         <Bar :data="lineData" :options="barChartOptions" />
       </div>
     </div>
+    <div style="overflow: auto">
+      <h2 style="text-align: center">Investment Summary</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>{{ investmentTitle }}</th>
+            <th>Year</th>
+            <th>Return Rate (%)</th>
+            <th>Principal</th>
+            <th>Estimated Returns</th>
+            <th>Total Wealth Generated</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="(entry, index) in investedAmount" :key="index">
+            <td>{{ formatPrice(investmentValue[index]) }}</td>
+            <td>{{ index + 1 }}</td>
+            <td>{{ retrunRate }}</td>
+            <td>{{ formatPrice(entry) }}</td>
+            <td>{{ formatPrice(expectedReturnsValues[index]) }}</td>
+            <td>{{ formatPrice(returns[index]) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </template>
 
@@ -26,14 +51,15 @@ import {
   ArcElement,
   BarElement
 } from 'chart.js';
-import { ref } from 'vue';
+import { ref, type Ref } from 'vue';
 import { Pie, Bar } from 'vue-chartjs';
 import {
   calculateLump,
   calculateSIP,
   calculateStepUpSIP,
   calculateYearlySIP,
-  formatCurrencyValue
+  formatCurrencyValue,
+  formatPrice
 } from './components/sip-calculator';
 import { InvestmentTypes } from './constants';
 
@@ -82,7 +108,7 @@ const barChartOptions = {
         afterLabel: function (context: any) {
           return [
             `Principal: ${formatCurrencyValue(investedAmount.value[context.dataIndex])}`,
-            `Returns: ${formatCurrencyValue(returns.value[context.dataIndex])}`
+            `Total Wealth: ${formatCurrencyValue(returns.value[context.dataIndex])}`
           ];
         },
         title: function () {
@@ -139,6 +165,10 @@ const lineData = ref({
 
 const investedAmount = ref([]);
 const returns = ref([]);
+const retrunRate = ref(0);
+const investmentValue: Ref<number[]> = ref([] as number[]);
+const expectedReturnsValues = ref([] as number[]);
+const investmentTitle = ref('Monthly Investment');
 
 const calculateChartData = (
   totalInvestment: number,
@@ -169,6 +199,10 @@ const calculateLineData = (
   const values: any = [];
   const labels: any = [];
   const investmentValues: any = [];
+  expectedReturnsValues.value = [];
+  investmentValue.value = [];
+  investmentTitle.value =
+    investmentType === InvestmentTypes.LUMPSUM ? 'Total Investment' : 'Monthly Investment';
 
   for (let i = 1; i <= years; i += 1) {
     const calculateReturns: any = () => {
@@ -186,7 +220,7 @@ const calculateLineData = (
       }
     };
 
-    const { totalInvestment, totalReturn } = calculateReturns();
+    const { totalInvestment, totalReturn, estimatedReturns } = calculateReturns();
     investmentType === InvestmentTypes.SIP
       ? calculateSIP(i, investment, expectedReturn)
       : investmentType === InvestmentTypes.STEPUP || investmentType === InvestmentTypes.SWP
@@ -197,11 +231,19 @@ const calculateLineData = (
 
     labels.push(i);
     values.push(totalReturn);
+    expectedReturnsValues.value.push(estimatedReturns);
     investmentValues.push(totalInvestment);
+    if (investmentType === InvestmentTypes.STEPUP || investmentType === InvestmentTypes.SWP) {
+      const yearlyInvestment = investment * Math.pow(1 + stepup / 100, i - 1);
+      investmentValue.value.push(yearlyInvestment);
+    } else {
+      investmentValue.value.push(investment);
+    }
   }
 
   investedAmount.value = investmentValues;
   returns.value = values;
+  retrunRate.value = expectedReturn;
 
   return {
     labels: labels,
@@ -337,5 +379,25 @@ body {
     'Helvetica Neue', Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+</style>
+
+<style>
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+th,
+td {
+  border: 1px solid #ddd; /* Adding border to table cells */
+  padding: 8px;
+  text-align: right;
+}
+th {
+  background-color: #f2f2f2;
+  text-align: center;
+}
+tr:nth-child(even) {
+  background-color: #f9f9f9;
 }
 </style>

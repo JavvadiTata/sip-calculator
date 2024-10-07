@@ -102,3 +102,13 @@ export const formatCurrencyValue = (value: number) => {
     return value.toFixed(2);
   }
 };
+
+export const formatPrice = (price: number) => {
+  if (isNaN(price)) {
+    price = 0;
+  }
+
+  return new Intl.NumberFormat('en-IN', {
+    maximumFractionDigits: 0
+  }).format(price);
+};
