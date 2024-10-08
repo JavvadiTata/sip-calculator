@@ -5,7 +5,7 @@ import vue from '@vitejs/plugin-vue';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  base: '/sip-calculator',
+  base: '/', // Change this line to set the public path to '/'
   plugins: [vue()],
   resolve: {
     alias: {
